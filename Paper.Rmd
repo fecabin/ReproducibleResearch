@@ -1,0 +1,158 @@
+# Analysis on storm aganistpopulation healh
+
+
+
+## 1- Synopsis
+  - This paper presents an analysis about the effect of storm on the population health.[Why we study this topic]. We analysis the data published by the )National Weather Service Instruction in 2007. These data . We use [data process technic]. We found[research findins] . [Implication and advice]
+
+
+## 2 - Analysis Question
+ 1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to popuulation health
+ 2.  Across the United States, which types of events have the greatest economic consequences
+ 
+## 3- Data Processing
+
+- 1. Load data
+```` {r }
+#attributes
+dUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(dUrl, f, mode = "wb")
+ff <- file.path(getwd(), "StormData.csv.bz2")
+
+data <- read.csv(ff, stringsAsFactors = FALSE,quote='')
+````
+
+- 2. keep features we want
+  - STATE   :
+  - X.STATE.: Abbervation for states in US
+  - X.EVTYPE.: Event type 
+  - X.MAG.:
+  - X.FATALITIES.: The number of people died
+  - X.INJURIES.  : The number of people injuured
+  - X.PROPDMG.   : The amount of property damge (measured in money)
+  - X.PRODMGEXP. : 
+
+```` {r filterCols}
+#attributes
+
+attributes<-c('X.STATE.','X.EVTYPE.','X.FATALITIES.','X.INJURIES.','X.PROPDMG.','X.PROPDMGEXP.','X.CROPDMG.','X.CROPDMGEXP.')
+pData<-data[,attributes]
+colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp','corpdmg','corpdmgexp')
+````
+### 3.1 Data cleanning
+   
+#### 3.1.1  Event tpye 
+      - Group all events with five main category
+      - Create a column as the unified name of that eventype 
+      - The hierachy looks like as follow:
+        - Convection
+          - lightning
+          - tornado
+          - thunderstorm Wwind
+          - hail
+        - ExtremeTemp
+          - cold
+          - heat
+        - Marine
+          - costal Storm
+          - runami
+          - rip Current
+        - Flood
+          - flash Flood
+          - river Flood
+        - Tropical Cyclones
+          - tropical Storm
+          - hurricane
+        - Other
+          - drought
+          - dust Storm
+          - dust Devil
+          - rain
+   
+evtCate       |  evtFactor    |    evt    |
+------------------| ----------------| -------------| 
+Convection  |  Lightning |  Flash LIGHTNING | 
+Convection  |  Lightning |  LIGHTNING/HEAVY RAIN | 
+Convection  |  Hail |  ... | 
+ExtremeTemp  |  Cold |  Cold | 
+...  |  ... |  ... | 
+Marine  |  Flash Flood  |  MARINE MISHA | 
+...  |  ... |  ... | 
+
+```` {r filterColumns,cache=TRUE}
+#1 to lower class
+
+regexLightning<-"\\bL\\S+?G\\b"
+
+pData$evttype<-reg.lightning<"[lightning|]")
+
+
+
+
+unifiyTypeAndAssignCate <- function (d,regx,uniTypeName,category){
+  if(d$evttype<-grepl(regx))
+  
+  
+  
+}
+
+ 
+
+
+
+
+````
+
+
+#### 3.1.2  Create an exact amounts for property and corp damage
+        - Fomula I  : propdmgValue = propdmg       *  propdmgexp
+        - Fomula II : cropdmgValue = cropdmg       *  cropdmgexp  
+        
+              propdmgexp   |  unit   
+           ----------------| ----------------
+              B            |  1,000,000,000
+              M            |      1,000,000   
+              K            |          1,000 
+              H            |            100
+
+```` {r dmgCaculation,cache=TRUE} 
+
+
+for (i in 1:length(pData)){
+   if(pData[i,"propdmgexp"] =="B") 
+     pData[i,"propdmgvalue"]<-pData[i,"propdmgexp"]*1000000000 
+  
+}sam
+
+transform(pData,propdmgValue = ( ifelse(propdmgexp =='B', propdmg*1000000000 , 
+                                 ifelse(propdmgexp=='M', propdm*1000000,
+                                 ifelse(propdmgexp =='K', propdmg*1000,
+                                 ifelse(propdmgexp =='H', propdmg*100, propdmg)))))) 
+pData$v1<-mutate(pData, ( ifelse(propdmgexp =='B', propdmg*1000000000 , 
+                                 ifelse(propdmgexp=='M', propdm*1000000,
+                                 ifelse(propdmgexp =='K', propdmg*1000,
+                                 ifelse(propdmgexp =='H', propdmg*100,propdmg))))))           
+
+transform(pData,cropdmgValue = ( ifelse(cropdmgexp =='B', cropdmg*1000000000 , 
+                                 ifelse(cropdmgexp=='M', cropdmg*1000000,
+                                 ifelse(cropdmgexp =='H', cropdmg*100),cropdmg
+                                 ) ) )
+          
+          for (i in 1:length(sample)){
+    if(pData[i,"propdmgexp"] =="B") 
+        pData[i,"propdmgvalue"]<-pData[i,"propdmgexp"]*1000000000 
+    
+}
+                    
+````
+          
+#### 3.2 Data extracting
+  
+
+  
+
+### 3- Results
+
+
+
+
