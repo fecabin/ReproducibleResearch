@@ -13,13 +13,15 @@
 ## 3- Data Processing
 
 - 1. Load data
-
+```` {r echo = TRUE,cache=TRUE}
+library(ggplot2)
+````
 ```` {r echo = TRUE,cache=TRUE}
 #attributes
 #dUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 #download.file(dUrl, f, mode = "wb")
 ff <- file.path(getwd(), "repdata-data-StormData.csv.bz2")
-data <- read.csv(ff, stringsAsFactors = FALSE,quote='')
+data <- read.csv(ff, stringsAsFactors = FALSE)
 ````
 
 - 2. Variables we keep for analysis
@@ -35,14 +37,15 @@ data <- read.csv(ff, stringsAsFactors = FALSE,quote='')
    corpdmgexp    | The unit of  damge (B,M,K,H)|
 
 
-```` {r filterCols}
+```{r filterCols}
 #attributes
 
 attributes<-c('STATE','EVTYPE','FATALITIES','INJURIES','PROPDMG','PROPDMGEXP','CROPDMG','CROPDMGEXP')
 
 pData<-data[,attributes]
 colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp','corpdmg','corpdmgexp')
-````
+names(pData)
+```
 ### 3.1 Data cleanning
    
 #### 3.1.1  Event tpye 
@@ -74,9 +77,9 @@ colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp'
           - dust Storm
           - dust Devil
           - rain
-      - The unified event name and filtr expression:
-      
- |  Event    |    Filter expression  |  
+          
+#### The unified event name and filtr expression:
+  Event    |    Filter expression  |  
 ------------------| ----------------|
   Lightning |  LIGHTNING | 
   Tornado   | NADO,FUNNEL,WATERSPOUT"|
@@ -98,6 +101,7 @@ colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp'
 
 
 ```` {r unifiednamefun,cache=TRUE,echo = TRUE}
+# Function : Give each eventype an unified event description
 deliverEvtUnifiedName<-function (dd){
   evtMatcher<-data.frame( reg=c("NADO|FUNNEL|WATERSPOUT","THUNDER|STORM|WIND","HAIL"
                                 ,"FROST|FREEZ|BLIZZARD|WINTER|COLD|LOW TEMP|RECORD LOW|SNOW|ICE","HEAT|WARM|RECORD HIGH"
@@ -113,15 +117,16 @@ deliverEvtUnifiedName<-function (dd){
   for ( i in  1:nrow(evtMatcher)){
     indexFit<-grep(evtMatcher[i,"reg"],toupper(dd[ ,"evtype"]))
     if(length(indexFit)>0){
-      dd[indexFit,"event"]<- as.character(factorId[i])
+      dd[indexFit,"event"]<- factorId[i]
      
     }
   }
+  return (dd)
 }
 ```
 
   - Use the function to filter and put value into "event"
-```` {r cache=TRUE,echo = TRUE}
+```` {r eventProcessing,echo = TRUE}
 
 
 pData$event<-("-")
@@ -133,7 +138,7 @@ pData[otherIndex,"event"]<-"Other"
 pData$event<-as.factor(pData$event)
 
 # See the event and number of that
-table(sort(-pData$event))
+#table(sort(-pData$event))
 ````
 
 
@@ -150,11 +155,12 @@ table(sort(-pData$event))
               H            |            100
               NA or BLANK  |              1
 
-```` {r dmgCaculation,cache=TRUE,echo = TRUE} 
+```` {r dmgCaculation ,echo = TRUE} 
+# Function : Caculate each entry the property and crop damge value by 'dmg' and 'exp' variables
 deliverActualDmgValue<-function (dd){
   unit<-data.frame( cha=c("B","M","K","H"), val=c(1000000000,1000000,1000,100))
-  dd$cropdmgvalue<-as.numeric(dd$corpdmg)
-  dd$propdmgvalue<-as.numeric(dd$propdmg)
+  dd$cropdmgvalue<-dd$corpdmg
+  dd$propdmgvalue<-dd$propdmg
   for ( i in  1:nrow(unit)){
     indexCrodFit<-grep(as.character(unit[i,"cha"]),toupper(dd[ ,"corpdmgexp"]))
     if(length(indexCrodFit)>0){
@@ -182,52 +188,58 @@ summary(pData$ecodmgvalue)
 ````
           
 #### 3.2 Data Aggeratiion
-```` {r dataAggrate,cache=TRUE,echo = TRUE} 
+```` {r dataAggrate,echo = TRUE} 
 
+library(reshape2)
+t0<-aggregate(cbind(ecodmgvalue, pephealthdmg) ~ event, pData, FUN = sum)
 t<-aggregate(cbind(propdmgvalue, corpdmgvalue,injures,fatalites) ~ event, pData, FUN = sum)
 
 tidy <- melt(t, id.var = "event", variable.name = "variable")
+colnames(tidy)<-c("event","damagetype","value")
+print(t0)
 print(tidy)
 ````
 
 ### 4- Results
 #### 4.1  The most harmful for people health
-
-````{r plot_healthdmg,cache=TRUE} 
+  - Extract rows that contains info about people impact on populaiton health 
+````{r plot_healthdmg,fig.width=13} 
+library("ggplot2")
 damgeOnHealth<-tidy[ grep('fatalites|injures',tidy[,'damagetype'] ),]
 
-ggplot(damgeOnHealth, aes(x=reorder(event,-value) ,y=value,fill=damagetype ))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for populaiton health", x = "Event", y = "Damage on populaiton health (number of people")+ scale_fill_manual(values=c("#EED094", "#C70000"))
+ggplot(damgeOnHealth, aes(x=reorder(event,value) ,y=value,fill=factor(damagetype,labels=c("Injures","Fatalites") )))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for populaiton health", x = "Event", y = "Damage on populaiton health (number of people)")+ scale_fill_manual(values=c("#F7B388", "#C70000"))+guides(fill = guide_legend(title = "Type of damage"))+xlab("Weather Event")+theme(axis.text = element_text(size=12,colour = "#1F4178"),                                                                                                                                                                                                                                                                                                                                                                                                              axis.title=element_text(size=14,colour = "#3A3E42",face="bold"),title = element_text(size=16,colour = "#282B2E",face="bold"))+coord_flip()
 ````
- Rank| Event   |  People Headth Harm (injuries+fatalites)| 
- -|--------|-------------|
-1|           Tornado     |   97078 | 
- 2|Thunderstorm wind    |    12608 | 
- 3|             Heat    |    12400 | 
- 4|       Flash flood   |     10250| 
- 5|      Cold   |     7415| 
 
-
+  Rank  | Event   |  People Headth Harm injuries+fatalites | 
+  ------ | -------- | ------------- |
+ 1 |           Tornado     |   97078 | 
+ 2 | Thunderstorm wind    |    12608 | 
+ 3 |         Heat    |    12400 | 
+ 4 |       Flash flood   |     10250 | 
+ 5 |      Cold   |     7415 | 
 
 #### 4.2  The most harmful for economic value 
- Rank| Event   |  People Headth Harm (injuries+fatalites)| 
- -|--------|-------------|
- 1|           Tornado     |   97078 | 
- 2|Thunderstorm wind    |    12608 | 
- 3|             Heat    |    12400 | 
- 4|       Flash flood   |     10250| 
- 5|      Cold   |     7415| 
+ Rank| Event   |  People Headth Harm (injuries+fatalites) | 
+ - | -------- | ------------- |
+ 1 |           Tornado     |   97078 | 
+ 2 | Thunderstorm wind    |    12608 | 
+ 3 |             Heat    |    12400 | 
+ 4 |       Flash flood   |     10250| 
+ 5 |      Cold   |     7415| 
 
 
 
-```` {r plot_ecodmg,cache=TRUE} 
+```` {r plot_ecodmg,fig.width=13} 
 
 damgeOnEconomic<-tidy[ grep('corpdmgvalue|propdmgvalue',tidy[,'damagetype'] ),]
-
-ggplot(damgeOnEconomic, aes(x=reorder(event,-value) ,y=value,fill=damagetype ))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for economic ", x = "Event", y = "Damage on economic value (US dollors)")+ scale_fill_manual(values=c("#1E87DE", "#4D7A49"))
-
-install.packages("xtable")
-library(xtable)
-sortedTable <- xtable(sort(tidy))
-print(sortedTable, type = "html")
+ggplot(damgeOnEconomic, aes(x=reorder(event,value) ,y=value,
+                            fill=factor(damagetype,labels=c("Property","Crop") )))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for economic ", x = "Event", y = "Damage on economic value (US dollors)")+ scale_fill_manual(values=c("#7D5E35", "#407D47"))+ guides(fill = guide_legend(title = "Type of damage"))+xlab("Weather Event")+theme(axis.text = element_text(size=12,colour = "#1F4178"),                                                                                                                                                                                                                                                                                                                                                                                                              axis.title=element_text(size=14,colour = "#3A3E42",face="bold"), title = element_text(size=16,colour = "#282B2E",face="bold")  )+ coord_flip()                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 ````
+
+### Summary
+
+
+
+
+
 
