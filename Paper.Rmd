@@ -1,0 +1,224 @@
+# Analysis on storm aganistpopulation healh
+
+
+
+## 1- Synopsis
+  - This paper presents an analysis about the effect of storm on the population health.[Why we study this topic]. We analysis the data published by the )National Weather Service Instruction in 2007. These data . We use [data process technic]. We found[research findins] . [Implication and advice]
+
+
+## 2 - Analysis Question
+ 1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to popuulation health
+ 2.  Across the United States, which types of events have the greatest economic consequences
+ 
+## 3- Data Processing
+
+- 1. Load data
+```` {r echo = TRUE,cache=TRUE}
+#attributes
+#dUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+#download.file(dUrl, f, mode = "wb")
+ff <- file.path(getwd(), "repdata-data-StormData.csv.bz2")
+data <- read.csv(ff, stringsAsFactors = FALSE,quote='')
+````
+
+- 2. Variables we keep for analysis
+  Variabl Name | Description|
+  -------------|-------------|
+   state      | Abbervation for states in US |
+   evtype     | Event type |
+   fatalites  | The number of people died|
+   injures   | The number of people injuured|
+   propdmg    | The amount of property damge (measured in money)|
+   propdmgexp  | The unit of  damge (B,M,K,H)|
+   corpdmg  | The amount of corp damge (measured in money)|
+   corpdmgexp    | The unit of  damge (B,M,K,H)|
+  
+```` {r filterCols,echo = TRUE}
+
+#attributes<-c('X.STATE.','X.EVTYPE.','X.FATALITIES.','X.INJURIES.','X.PROPDMG.','X.PROPDMGEXP.','X.CROPDMG##.','X.CROPDMGEXP.')
+attributes<-c('STATE','EVTYPE','FATALITIES','INJURIES','PROPDMG','PROPDMGEXP','CROPDMG','CROPDMGEXP')
+pData<-data[,attributes]
+colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp','corpdmg','corpdmgexp')
+````
+### 3.1 Data cleanning
+   
+#### 3.1.1  Event tpye 
+      - Create a column as the unified name of that eventype 
+      - The hierachy looks like as follow:
+        - Convection
+          - lightning
+          - tornado
+          - thunderstorm Wind
+          - hail
+        - ExtremeTemp
+          - cold
+          - heat
+        - Marine
+          - costal Storm
+          - sunami
+          - rip Current
+        - Flood
+          - flash Flood
+          - river Flood
+        - Tropical Cyclones
+          - tropical Storm
+          - hurricane
+        - Other
+          - drought
+          - dust Storm
+          - dust Devil
+          - rain
+      - The unified event name and filtr expression:
+ |  Event    |    Filter expression  |  
+------------------| ----------------|
+  Lightning |  LIGHTNING | 
+  Tornado   | NADO,FUNNEL,WATERSPOUT"|
+  Thunderstorm wind |  THUNDER,STORM,WIND | 
+  Hail |  HAIL | 
+  Cold |  BLIZZARD|WINTER|COLD|LOW TEMP|RECORD LOW|SNOW|ICE | 
+  Heat |  HEAT|WARM|RECORD HIGH | 
+  Costa l Storm |  COSTAL STORM | 
+  Sunami | SUNAMI | 
+  Rip current|RIP CURRENT
+  Flash flood   |  FLASH FLOOD,FLD,FLOOD | 
+  River flood   |  RIVER FLOOD , URBAN FLOOD | 
+  Tropical Storm |TROPICAL STORM,TROPICAL|
+  Hurricane   | HURRICANE |
+   Drought   | DROUGHT |
+    Dust storm   | DUST STORM |
+        Dust devil   | DUST DEVIL |
+    RAIN  | rain |
+
+
+```` {r unifiednamefun,cache=TRUE,echo = TRUE}
+deliverEvtUnifiedName<-function (dd){
+  evtMatcher<-data.frame( reg=c("NADO|FUNNEL|WATERSPOUT","THUNDER|STORM|WIND","HAIL"
+                                ,"FROST|FREEZ|BLIZZARD|WINTER|COLD|LOW TEMP|RECORD LOW|SNOW|ICE","HEAT|WARM|RECORD HIGH"
+                                ,"COSTAL STORM","SUNAMI","RIP CURRENT"
+                                ,"FLASH FLOOD|FLD|FLOOD","RIVER FLOOD|URBAN FLOOD","TROPICAL STORM|TROPICAL"," "
+                                ,"DROUGHT","DUST STORM","DUST DEVIL","RAIN","LIGHTNING") )
+  
+  factorId<-c("Tornado","Thunderstorm wind","Hail"
+                        ,"Cold","Heat","Costal Storm","Sunami","Rip current"
+                        ,"Flash flood","River flood","Tropical Storm","Hurricane"
+                        ,"Drought","Dust storm","Dust devil","Rain","Ligntning","Other");
+ 
+  for ( i in  1:nrow(evtMatcher)){
+    indexFit<-grep(evtMatcher[i,"reg"],toupper(dd[ ,"evtype"]))
+    if(length(indexFit)>0){
+      dd[indexFit,"event"]<- as.character(factorId[i])
+     
+    }
+  }
+}
+```
+
+  - Use the function to filter and put value into "event"
+```` {r cache=TRUE,echo = TRUE}
+
+
+pData$event<-("-")
+
+# Give each event an unified id factor (17+1 factors)
+pData<-deliverEvtUnifiedName(pData)
+otherIndex<-grep("-",pData[,"event"])
+pData[otherIndex,"event"]<-"Other"
+pData$event<-as.factor(pData$event)
+
+# See the event and number of that
+table(sort(-pData$event))
+````
+
+#### 3.1.2  Create a variable has exact amount for property and corp damage
+        - Fomula I  : propdmgValue  = propdmg       *  propdmgexp
+        - Fomula II : corpdmgValue  = cropdmg       *  cropdmgexp
+        - New Variable: ecodmgvalue = propdmgValue+corpdmgValue
+        
+              propdmgexp   |  unit   
+           ----------------| ----------------
+              B            |  1,000,000,000
+              M            |      1,000,000   
+              K            |          1,000 
+              H            |            100
+              NA or BLANK  |              1
+
+```` {r dmgCaculation,cache=TRUE,echo = TRUE} 
+deliverActualDmgValue<-function (dd){
+  unit<-data.frame( cha=c("B","M","K","H"), val=c(1000000000,1000000,1000,100))
+  dd$cropdmgvalue<-as.numeric(dd$corpdmg)
+  dd$propdmgvalue<-as.numeric(dd$propdmg)
+  for ( i in  1:nrow(unit)){
+    indexCrodFit<-grep(as.character(unit[i,"cha"]),toupper(dd[ ,"corpdmgexp"]))
+    if(length(indexCrodFit)>0){
+      dd[indexCrodFit,'corpdmgvalue']<- unit[i,"val"]* dd[indexCrodFit ,"corpdmg"]
+    }
+    indexProdFit<-grep(as.character(unit[i,"cha"]),toupper(dd[ ,"propdmgexp"]))
+    if(length(indexProdFit)>0){
+      dd[indexProdFit,'propdmgvalue']<- unit[i,"val"]* dd[indexProdFit ,"propdmg"]
+    }
+  }
+  return (dd)
+}
+
+pData<-deliverActualDmgValue(pData);
+
+# see the value:
+summary(pData$corpdmgvalue)
+summary(pData$prodmgvalue)
+
+
+# Add a new variable: propdmagevalue + corpdmgvalue
+pData$ecodmgvalue<-pData$corpdmgvalue+pData$propdmgvalue
+pData$pephealthdmg<-pData$injures+pData$fatalites
+summary(pData$ecodmgvalue)
+````
+          
+#### 3.2 Data Aggeratiion
+```` {r dataAggrate,cache=TRUE,echo = TRUE} 
+
+t<-aggregate(cbind(propdmgvalue, corpdmgvalue,injures,fatalites) ~ event, pData, FUN = sum)
+
+tidy <- melt(t, id.var = "event", variable.name = "variable")
+print(tidy)
+````
+
+### 4- Results
+#### 4.1  The most harmful for people health top 5
+
+````{r plot_healthdmg,cache=TRUE} 
+damgeOnHealth<-tidy[ grep('fatalites|injures',tidy[,'damagetype'] ),]
+
+ggplot(damgeOnHealth, aes(x=reorder(event,-value) ,y=value,fill=damagetype ))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for populaiton health", x = "Event", y = "Damage on populaiton health (number of people")+ scale_fill_manual(values=c("#EED094", "#C70000"))
+````
+ Rank| Event   |  People Headth Harm (injuries+fatalites)| 
+ -|--------|-------------|
+1|           Tornado     |   97078 | 
+ 2|Thunderstorm wind    |    12608 | 
+ 3|             Heat    |    12400 | 
+ 4|       Flash flood   |     10250| 
+ 5|      Cold   |     7415| 
+
+
+
+#### 4.2  The most harmful for economic value top 5
+ Rank| Event   |  People Headth Harm (injuries+fatalites)| 
+ -|--------|-------------|
+ 1|           Tornado     |   97078 | 
+ 2|Thunderstorm wind    |    12608 | 
+ 3|             Heat    |    12400 | 
+ 4|       Flash flood   |     10250| 
+ 5|      Cold   |     7415| 
+
+
+
+```` {r plot_ecodmg,cache=TRUE} 
+
+damgeOnEconomic<-tidy[ grep('corpdmgvalue|propdmgvalue',tidy[,'damagetype'] ),]
+
+ggplot(damgeOnEconomic, aes(x=reorder(event,-value) ,y=value,fill=damagetype ))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for economic ", x = "Event", y = "Damage on economic value (US dollors)")+ scale_fill_manual(values=c("#1E87DE", "#4D7A49"))
+
+install.packages("xtable")
+library(xtable)
+sortedTable <- xtable(sort(tidy))
+print(sortedTable, type = "html")
+````
