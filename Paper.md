@@ -6,6 +6,7 @@
   - This paper presents an analysis about the effect of storm on the population health.[Why we study this topic]. We analysis the data published by the )National Weather Service Instruction in 2007. These data . We use [data process technic]. We found[research findins] . [Implication and advice]
 
 
+<<<<<<< HEAD
 ## 2 - Analysis Question
  1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to popuulation health
  2.  Across the United States, which types of events have the greatest economic consequences
@@ -443,4 +444,26 @@ print(sortedTable, type = "html")
 ##   <TR> <TD align="right"> 17 </TD> <TD> Tropical Storm </TD> <TD align="right"> 449.00 </TD> <TD align="right"> 8411023550.00 </TD> </TR>
 ##    </TABLE>
 ```
+=======
+### 2 - Analysis Question
+ 1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to popuulation health
+ 2.  Across the United States, which types of events have the greatest economic consequences
+ 
+ 
+### 3- Data Processing
+
+
+#### 3.1 Data cleanning
+
+
+#### 3.2 Data extracting
+  
+
+  
+
+### 3- Results
+
+
+
+>>>>>>> FETCH_HEAD
 

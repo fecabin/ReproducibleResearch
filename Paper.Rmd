@@ -13,6 +13,7 @@
 ## 3- Data Processing
 
 - 1. Load data
+<<<<<<< HEAD
 ```` {r echo = TRUE,cache=TRUE}
 #attributes
 #dUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
@@ -37,25 +38,62 @@ data <- read.csv(ff, stringsAsFactors = FALSE,quote='')
 
 #attributes<-c('X.STATE.','X.EVTYPE.','X.FATALITIES.','X.INJURIES.','X.PROPDMG.','X.PROPDMGEXP.','X.CROPDMG##.','X.CROPDMGEXP.')
 attributes<-c('STATE','EVTYPE','FATALITIES','INJURIES','PROPDMG','PROPDMGEXP','CROPDMG','CROPDMGEXP')
+=======
+```` {r }
+#attributes
+dUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(dUrl, f, mode = "wb")
+ff <- file.path(getwd(), "StormData.csv.bz2")
+
+data <- read.csv(ff, stringsAsFactors = FALSE,quote='')
+````
+
+- 2. keep features we want
+  - STATE   :
+  - X.STATE.: Abbervation for states in US
+  - X.EVTYPE.: Event type 
+  - X.MAG.:
+  - X.FATALITIES.: The number of people died
+  - X.INJURIES.  : The number of people injuured
+  - X.PROPDMG.   : The amount of property damge (measured in money)
+  - X.PRODMGEXP. : 
+
+```` {r filterCols}
+#attributes
+
+attributes<-c('X.STATE.','X.EVTYPE.','X.FATALITIES.','X.INJURIES.','X.PROPDMG.','X.PROPDMGEXP.','X.CROPDMG.','X.CROPDMGEXP.')
+>>>>>>> FETCH_HEAD
 pData<-data[,attributes]
 colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp','corpdmg','corpdmgexp')
 ````
 ### 3.1 Data cleanning
    
 #### 3.1.1  Event tpye 
+<<<<<<< HEAD
+=======
+      - Group all events with five main category
+>>>>>>> FETCH_HEAD
       - Create a column as the unified name of that eventype 
       - The hierachy looks like as follow:
         - Convection
           - lightning
           - tornado
+<<<<<<< HEAD
           - thunderstorm Wind
+=======
+          - thunderstorm Wwind
+>>>>>>> FETCH_HEAD
           - hail
         - ExtremeTemp
           - cold
           - heat
         - Marine
           - costal Storm
+<<<<<<< HEAD
           - sunami
+=======
+          - runami
+>>>>>>> FETCH_HEAD
           - rip Current
         - Flood
           - flash Flood
@@ -68,6 +106,7 @@ colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp'
           - dust Storm
           - dust Devil
           - rain
+<<<<<<< HEAD
       - The unified event name and filtr expression:
  |  Event    |    Filter expression  |  
 ------------------| ----------------|
@@ -133,6 +172,47 @@ table(sort(-pData$event))
         - Fomula I  : propdmgValue  = propdmg       *  propdmgexp
         - Fomula II : corpdmgValue  = cropdmg       *  cropdmgexp
         - New Variable: ecodmgvalue = propdmgValue+corpdmgValue
+=======
+   
+evtCate       |  evtFactor    |    evt    |
+------------------| ----------------| -------------| 
+Convection  |  Lightning |  Flash LIGHTNING | 
+Convection  |  Lightning |  LIGHTNING/HEAVY RAIN | 
+Convection  |  Hail |  ... | 
+ExtremeTemp  |  Cold |  Cold | 
+...  |  ... |  ... | 
+Marine  |  Flash Flood  |  MARINE MISHA | 
+...  |  ... |  ... | 
+
+```` {r filterColumns,cache=TRUE}
+#1 to lower class
+
+regexLightning<-"\\bL\\S+?G\\b"
+
+pData$evttype<-reg.lightning<"[lightning|]")
+
+
+
+
+unifiyTypeAndAssignCate <- function (d,regx,uniTypeName,category){
+  if(d$evttype<-grepl(regx))
+  
+  
+  
+}
+
+ 
+
+
+
+
+````
+
+
+#### 3.1.2  Create an exact amounts for property and corp damage
+        - Fomula I  : propdmgValue = propdmg       *  propdmgexp
+        - Fomula II : cropdmgValue = cropdmg       *  cropdmgexp  
+>>>>>>> FETCH_HEAD
         
               propdmgexp   |  unit   
            ----------------| ----------------
@@ -140,6 +220,7 @@ table(sort(-pData$event))
               M            |      1,000,000   
               K            |          1,000 
               H            |            100
+<<<<<<< HEAD
               NA or BLANK  |              1
 
 ```` {r dmgCaculation,cache=TRUE,echo = TRUE} 
@@ -222,3 +303,47 @@ library(xtable)
 sortedTable <- xtable(sort(tidy))
 print(sortedTable, type = "html")
 ````
+=======
+
+```` {r dmgCaculation,cache=TRUE} 
+
+
+for (i in 1:length(pData)){
+   if(pData[i,"propdmgexp"] =="B") 
+     pData[i,"propdmgvalue"]<-pData[i,"propdmgexp"]*1000000000 
+  
+}sam
+
+transform(pData,propdmgValue = ( ifelse(propdmgexp =='B', propdmg*1000000000 , 
+                                 ifelse(propdmgexp=='M', propdm*1000000,
+                                 ifelse(propdmgexp =='K', propdmg*1000,
+                                 ifelse(propdmgexp =='H', propdmg*100, propdmg)))))) 
+pData$v1<-mutate(pData, ( ifelse(propdmgexp =='B', propdmg*1000000000 , 
+                                 ifelse(propdmgexp=='M', propdm*1000000,
+                                 ifelse(propdmgexp =='K', propdmg*1000,
+                                 ifelse(propdmgexp =='H', propdmg*100,propdmg))))))           
+
+transform(pData,cropdmgValue = ( ifelse(cropdmgexp =='B', cropdmg*1000000000 , 
+                                 ifelse(cropdmgexp=='M', cropdmg*1000000,
+                                 ifelse(cropdmgexp =='H', cropdmg*100),cropdmg
+                                 ) ) )
+          
+          for (i in 1:length(sample)){
+    if(pData[i,"propdmgexp"] =="B") 
+        pData[i,"propdmgvalue"]<-pData[i,"propdmgexp"]*1000000000 
+    
+}
+                    
+````
+          
+#### 3.2 Data extracting
+  
+
+  
+
+### 3- Results
+
+
+
+
+>>>>>>> FETCH_HEAD
