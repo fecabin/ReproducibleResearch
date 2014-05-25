@@ -1,10 +1,7 @@
-# Analysis on storm aganistpopulation healh
-
-
+# Analysis on Various Weather Events aganist Population Health and Economic
 
 ## 1- Synopsis
-  - This paper presents an analysis about the effect of storm on the population health.[Why we study this topic]. We analysis the data published by the )National Weather Service Instruction in 2007. These data . We use [data process technic]. We found[research findins] . [Implication and advice]
-
+  - This report presents an analysis about the impacts of wheather events on the population health and economic.We analysis the data published by the National Weather Service Instruction in 2007. We will address the damge on economic  by reporting the economic dmange caculated by property damge and crop damge measuered in US dollars, and address the damage on people health by sum the number of injures and fatalites in the events. 
 
 ## 2 - Analysis Question
  1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to popuulation health
@@ -14,17 +11,20 @@
 
 - 1. Load data
 ```` {r echo = TRUE,cache=TRUE}
-library(ggplot2)
+
+library(ggplot2) # plot 
+
+
 ````
 ```` {r echo = TRUE,cache=TRUE}
 #attributes
-#dUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
-#download.file(dUrl, f, mode = "wb")
+
 ff <- file.path(getwd(), "repdata-data-StormData.csv.bz2")
 data <- read.csv(ff, stringsAsFactors = FALSE)
 ````
 
 - 2. Variables we keep for analysis
+
   Variabl Name | Description|
   -------------|-------------|
    state      | Abbervation for states in US |
@@ -33,8 +33,8 @@ data <- read.csv(ff, stringsAsFactors = FALSE)
    injures   | The number of people injuured|
    propdmg    | The amount of property damge (measured in money)|
    propdmgexp  | The unit of  damge (B,M,K,H)|
-   corpdmg  | The amount of corp damge (measured in money)|
-   corpdmgexp    | The unit of  damge (B,M,K,H)|
+   cropdmg  | The amount of corp damge (measured in money)|
+   cropdmgexp    | The unit of  damge (B,M,K,H)|
 
 
 ```{r filterCols}
@@ -43,7 +43,7 @@ data <- read.csv(ff, stringsAsFactors = FALSE)
 attributes<-c('STATE','EVTYPE','FATALITIES','INJURIES','PROPDMG','PROPDMGEXP','CROPDMG','CROPDMGEXP')
 
 pData<-data[,attributes]
-colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp','corpdmg','corpdmgexp')
+colnames(pData)<-c('state','evtype','fatalites','injures','propdmg','propdmgexp','cropdmg','cropdmgexp')
 names(pData)
 ```
 ### 3.1 Data cleanning
@@ -138,7 +138,7 @@ pData[otherIndex,"event"]<-"Other"
 pData$event<-as.factor(pData$event)
 
 # See the event and number of that
-#table(sort(-pData$event))
+table(pData$event)
 ````
 
 
@@ -159,87 +159,67 @@ pData$event<-as.factor(pData$event)
 # Function : Caculate each entry the property and crop damge value by 'dmg' and 'exp' variables
 deliverActualDmgValue<-function (dd){
   unit<-data.frame( cha=c("B","M","K","H"), val=c(1000000000,1000000,1000,100))
-  dd$cropdmgvalue<-dd$corpdmg
-  dd$propdmgvalue<-dd$propdmg
+  multi<-c(1000000000,1000000,1000,100);
+
   for ( i in  1:nrow(unit)){
-    indexCrodFit<-grep(as.character(unit[i,"cha"]),toupper(dd[ ,"corpdmgexp"]))
+    indexCrodFit<-grep(unit[i,"cha"], toupper(dd[ ,"cropdmgexp"]))
     if(length(indexCrodFit)>0){
-      dd[indexCrodFit,'corpdmgvalue']<- unit[i,"val"]* dd[indexCrodFit ,"corpdmg"]
+      dd[indexCrodFit,'cropdmgvalue']<- multi[i] * dd[indexCrodFit ,"cropdmg"]
     }
-    indexProdFit<-grep(as.character(unit[i,"cha"]),toupper(dd[ ,"propdmgexp"]))
+    indexProdFit<-grep(unit[i,"cha"],toupper(dd[ ,"propdmgexp"]))
     if(length(indexProdFit)>0){
-      dd[indexProdFit,'propdmgvalue']<- unit[i,"val"]* dd[indexProdFit ,"propdmg"]
+      dd[indexProdFit,'propdmgvalue']<- multi[i] * dd[indexProdFit ,"propdmg"]
     }
   }
-  return (dd)
+  return(dd)
 }
 
-pData<-deliverActualDmgValue(pData);
 
+pData$cropdmgvalue<-pData$cropdmg
+pData$propdmgvalue<-pData$propdmg
+pData<-deliverActualDmgValue(pData)
 # see the value:
-summary(pData$corpdmgvalue)
-summary(pData$prodmgvalue)
+summary(pData$cropdmgvalue)
+summary(pData$propdmgvalue)
 
 
 # Add a new variable: propdmagevalue + corpdmgvalue
-pData$ecodmgvalue<-pData$corpdmgvalue+pData$propdmgvalue
+pData$ecodmgvalue<-pData$cropdmgvalue+pData$propdmgvalue
 pData$pephealthdmg<-pData$injures+pData$fatalites
 summary(pData$ecodmgvalue)
 ````
           
 #### 3.2 Data Aggeratiion
 ```` {r dataAggrate,echo = TRUE} 
-
 library(reshape2)
-t0<-aggregate(cbind(ecodmgvalue, pephealthdmg) ~ event, pData, FUN = sum)
-t<-aggregate(cbind(propdmgvalue, corpdmgvalue,injures,fatalites) ~ event, pData, FUN = sum)
 
+t<-aggregate(cbind(propdmgvalue, cropdmgvalue,injures,fatalites) ~ event, pData, FUN = sum)
 tidy <- melt(t, id.var = "event", variable.name = "variable")
 colnames(tidy)<-c("event","damagetype","value")
-print(t0)
 print(tidy)
 ````
 
 ### 4- Results
 #### 4.1  The most harmful for people health
   - Extract rows that contains info about people impact on populaiton health 
-````{r plot_healthdmg,fig.width=13} 
+````{r plot_healthdmg,fig.width=12} 
 library("ggplot2")
 damgeOnHealth<-tidy[ grep('fatalites|injures',tidy[,'damagetype'] ),]
 
 ggplot(damgeOnHealth, aes(x=reorder(event,value) ,y=value,fill=factor(damagetype,labels=c("Injures","Fatalites") )))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for populaiton health", x = "Event", y = "Damage on populaiton health (number of people)")+ scale_fill_manual(values=c("#F7B388", "#C70000"))+guides(fill = guide_legend(title = "Type of damage"))+xlab("Weather Event")+theme(axis.text = element_text(size=12,colour = "#1F4178"),                                                                                                                                                                                                                                                                                                                                                                                                              axis.title=element_text(size=14,colour = "#3A3E42",face="bold"),title = element_text(size=16,colour = "#282B2E",face="bold"))+coord_flip()
 ````
 
-  Rank  | Event   |  People Headth Harm injuries+fatalites | 
-  ------ | -------- | ------------- |
- 1 |           Tornado     |   97078 | 
- 2 | Thunderstorm wind    |    12608 | 
- 3 |         Heat    |    12400 | 
- 4 |       Flash flood   |     10250 | 
- 5 |      Cold   |     7415 | 
-
+ 
 #### 4.2  The most harmful for economic value 
- Rank| Event   |  People Headth Harm (injuries+fatalites) | 
- - | -------- | ------------- |
- 1 |           Tornado     |   97078 | 
- 2 | Thunderstorm wind    |    12608 | 
- 3 |             Heat    |    12400 | 
- 4 |       Flash flood   |     10250| 
- 5 |      Cold   |     7415| 
 
 
 
-```` {r plot_ecodmg,fig.width=13} 
 
-damgeOnEconomic<-tidy[ grep('corpdmgvalue|propdmgvalue',tidy[,'damagetype'] ),]
+```` {r plot_ecodmg,fig.width=12} 
+
+damgeOnEconomic<-tidy[ grep('cropdmgvalue|propdmgvalue',tidy[,'damagetype'] ),]
 ggplot(damgeOnEconomic, aes(x=reorder(event,value) ,y=value,
                             fill=factor(damagetype,labels=c("Property","Crop") )))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for economic ", x = "Event", y = "Damage on economic value (US dollors)")+ scale_fill_manual(values=c("#7D5E35", "#407D47"))+ guides(fill = guide_legend(title = "Type of damage"))+xlab("Weather Event")+theme(axis.text = element_text(size=12,colour = "#1F4178"),                                                                                                                                                                                                                                                                                                                                                                                                              axis.title=element_text(size=14,colour = "#3A3E42",face="bold"), title = element_text(size=16,colour = "#282B2E",face="bold")  )+ coord_flip()                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 ````
-
-### Summary
-
-
-
-
 
 

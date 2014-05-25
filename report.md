@@ -1,10 +1,7 @@
-# Analysis on storm aganistpopulation healh
-
-
+# Analysis on Various Weather Events aganist Population Health and Economic
 
 ## 1- Synopsis
-  - This paper presents an analysis about the effect of storm on the population health.[Why we study this topic]. We analysis the data published by the )National Weather Service Instruction in 2007. These data . We use [data process technic]. We found[research findins] . [Implication and advice]
-
+  - This report presents an analysis about the impacts of wheather events on the population health and economic.We analysis the data published by the National Weather Service Instruction in 2007. We will address the damge on economic  by reporting the economic dmange caculated by property damge and crop damge measuered in US dollars, and address the damage on people health by sum the number of injures and fatalites in the events. 
 
 ## 2 - Analysis Question
  1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to popuulation health
@@ -15,20 +12,22 @@
 - 1. Load data
 
 ```r
-library(ggplot2)
+
+library(ggplot2)  # plot 
+
 ```
 
 
 ```r
-# attributes dUrl <-
-# 'https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2'
-# download.file(dUrl, f, mode = 'wb')
+# attributes
+
 ff <- file.path(getwd(), "repdata-data-StormData.csv.bz2")
 data <- read.csv(ff, stringsAsFactors = FALSE)
 ```
 
 
 - 2. Variables we keep for analysis
+
   Variabl Name | Description|
   -------------|-------------|
    state      | Abbervation for states in US |
@@ -37,8 +36,8 @@ data <- read.csv(ff, stringsAsFactors = FALSE)
    injures   | The number of people injuured|
    propdmg    | The amount of property damge (measured in money)|
    propdmgexp  | The unit of  damge (B,M,K,H)|
-   corpdmg  | The amount of corp damge (measured in money)|
-   corpdmgexp    | The unit of  damge (B,M,K,H)|
+   cropdmg  | The amount of corp damge (measured in money)|
+   cropdmgexp    | The unit of  damge (B,M,K,H)|
 
 
 
@@ -50,13 +49,13 @@ attributes <- c("STATE", "EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMG
 
 pData <- data[, attributes]
 colnames(pData) <- c("state", "evtype", "fatalites", "injures", "propdmg", "propdmgexp", 
-    "corpdmg", "corpdmgexp")
+    "cropdmg", "cropdmgexp")
 names(pData)
 ```
 
 ```
 ## [1] "state"      "evtype"     "fatalites"  "injures"    "propdmg"   
-## [6] "propdmgexp" "corpdmg"    "corpdmgexp"
+## [6] "propdmgexp" "cropdmg"    "cropdmgexp"
 ```
 
 ### 3.1 Data cleanning
@@ -90,8 +89,8 @@ names(pData)
           - dust Storm
           - dust Devil
           - rain
-      - The unified event name and filtr expression:
-      
+          
+#### The unified event name and filtr expression:
   Event    |    Filter expression  |  
 ------------------| ----------------|
   Lightning |  LIGHTNING | 
@@ -115,6 +114,7 @@ names(pData)
 
 
 ```r
+# Function : Give each eventype an unified event description
 deliverEvtUnifiedName <- function(dd) {
     evtMatcher <- data.frame(reg = c("NADO|FUNNEL|WATERSPOUT", "THUNDER|STORM|WIND", 
         "HAIL", "FROST|FREEZ|BLIZZARD|WINTER|COLD|LOW TEMP|RECORD LOW|SNOW|ICE", 
@@ -152,7 +152,20 @@ otherIndex <- grep("-", pData[, "event"])
 pData[otherIndex, "event"] <- "Other"
 pData$event <- as.factor(pData$event)
 
-# See the event and number of that table(sort(-pData$event))
+# See the event and number of that
+table(pData$event)
+```
+
+```
+## 
+##              Cold           Drought        Dust devil        Dust storm 
+##              4987              2512               150               429 
+##       Flash flood              Hail              Heat         Hurricane 
+##             25455            288672               768            481449 
+##         Ligntning             Other              Rain            Sunami 
+##             15776              4840             12238                20 
+## Thunderstorm wind           Tornado 
+##               438             64563
 ```
 
 
@@ -172,155 +185,135 @@ pData$event <- as.factor(pData$event)
 
 
 ```r
+# Function : Caculate each entry the property and crop damge value by 'dmg'
+# and 'exp' variables
 deliverActualDmgValue <- function(dd) {
     unit <- data.frame(cha = c("B", "M", "K", "H"), val = c(1e+09, 1e+06, 1000, 
         100))
-    dd$cropdmgvalue <- dd$corpdmg
-    dd$propdmgvalue <- dd$propdmg
+    multi <- c(1e+09, 1e+06, 1000, 100)
+    
     for (i in 1:nrow(unit)) {
-        indexCrodFit <- grep(as.character(unit[i, "cha"]), toupper(dd[, "corpdmgexp"]))
+        indexCrodFit <- grep(unit[i, "cha"], toupper(dd[, "cropdmgexp"]))
         if (length(indexCrodFit) > 0) {
-            dd[indexCrodFit, "corpdmgvalue"] <- unit[i, "val"] * dd[indexCrodFit, 
-                "corpdmg"]
+            dd[indexCrodFit, "cropdmgvalue"] <- multi[i] * dd[indexCrodFit, 
+                "cropdmg"]
         }
-        indexProdFit <- grep(as.character(unit[i, "cha"]), toupper(dd[, "propdmgexp"]))
+        indexProdFit <- grep(unit[i, "cha"], toupper(dd[, "propdmgexp"]))
         if (length(indexProdFit) > 0) {
-            dd[indexProdFit, "propdmgvalue"] <- unit[i, "val"] * dd[indexProdFit, 
+            dd[indexProdFit, "propdmgvalue"] <- multi[i] * dd[indexProdFit, 
                 "propdmg"]
         }
     }
     return(dd)
 }
 
+
+pData$cropdmgvalue <- pData$cropdmg
+pData$propdmgvalue <- pData$propdmg
 pData <- deliverActualDmgValue(pData)
-
 # see the value:
-summary(pData$corpdmgvalue)
+summary(pData$cropdmgvalue)
 ```
 
 ```
-##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max.     NA's 
-## 0.00e+00 0.00e+00 0.00e+00 1.73e+05 0.00e+00 5.00e+09   618440
+##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+## 0.00e+00 0.00e+00 0.00e+00 5.44e+04 0.00e+00 5.00e+09
 ```
 
 ```r
-summary(pData$prodmgvalue)
+summary(pData$propdmgvalue)
 ```
 
 ```
-## Length  Class   Mode 
-##      0   NULL   NULL
+##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+## 0.00e+00 0.00e+00 0.00e+00 4.74e+05 5.00e+02 1.15e+11
 ```
 
 ```r
 
 
 # Add a new variable: propdmagevalue + corpdmgvalue
-pData$ecodmgvalue <- pData$corpdmgvalue + pData$propdmgvalue
+pData$ecodmgvalue <- pData$cropdmgvalue + pData$propdmgvalue
 pData$pephealthdmg <- pData$injures + pData$fatalites
 summary(pData$ecodmgvalue)
 ```
 
 ```
-##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max.     NA's 
-## 0.00e+00 0.00e+00 0.00e+00 9.86e+05 5.00e+03 1.15e+11   618440
+##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+## 0.00e+00 0.00e+00 0.00e+00 5.28e+05 1.00e+03 1.15e+11
 ```
 
           
 #### 3.2 Data Aggeratiion
 
 ```r
-
 library(reshape2)
-t0 <- aggregate(cbind(ecodmgvalue, pephealthdmg) ~ event, pData, FUN = sum)
-t <- aggregate(cbind(propdmgvalue, corpdmgvalue, injures, fatalites) ~ event, 
-    pData, FUN = sum)
 
+t <- aggregate(cbind(propdmgvalue, cropdmgvalue, injures, fatalites) ~ event, 
+    pData, FUN = sum)
 tidy <- melt(t, id.var = "event", variable.name = "variable")
 colnames(tidy) <- c("event", "damagetype", "value")
-print(t0)
-```
-
-```
-##                event ecodmgvalue pephealthdmg
-## 1               Cold   1.835e+09          431
-## 2            Drought   1.421e+10           23
-## 3         Dust devil   3.811e+05           26
-## 4         Dust storm   7.049e+06           74
-## 5        Flash flood   1.386e+11         6760
-## 6               Hail   1.102e+10          306
-## 7               Heat   4.031e+08         1773
-## 8          Hurricane   4.972e+10         8383
-## 9          Ligntning   3.274e+08         1187
-## 10             Other   4.579e+10         1795
-## 11              Rain   1.267e+09           63
-## 12            Sunami   1.441e+08          162
-## 13 Thunderstorm wind   1.816e+06            0
-## 14           Tornado   1.659e+10        13024
-```
-
-```r
 print(tidy)
 ```
 
 ```
 ##                event   damagetype     value
-## 1               Cold propdmgvalue 1.057e+08
-## 2            Drought propdmgvalue 2.339e+08
-## 3         Dust devil propdmgvalue 3.811e+05
-## 4         Dust storm propdmgvalue 3.449e+06
-## 5        Flash flood propdmgvalue 1.329e+11
-## 6               Hail propdmgvalue 7.992e+09
-## 7               Heat propdmgvalue 1.655e+06
-## 8          Hurricane propdmgvalue 3.244e+10
-## 9          Ligntning propdmgvalue 3.153e+08
-## 10             Other propdmgvalue 4.012e+10
-## 11              Rain propdmgvalue 3.474e+08
+## 1               Cold propdmgvalue 7.009e+08
+## 2            Drought propdmgvalue 1.046e+09
+## 3         Dust devil propdmgvalue 7.191e+05
+## 4         Dust storm propdmgvalue 5.599e+06
+## 5        Flash flood propdmgvalue 1.448e+11
+## 6               Hail propdmgvalue 1.597e+10
+## 7               Heat propdmgvalue 1.797e+06
+## 8          Hurricane propdmgvalue 1.165e+11
+## 9          Ligntning propdmgvalue 9.390e+08
+## 10             Other propdmgvalue 8.699e+10
+## 11              Rain propdmgvalue 3.265e+09
 ## 12            Sunami propdmgvalue 1.441e+08
-## 13 Thunderstorm wind propdmgvalue 5.500e+03
-## 14           Tornado propdmgvalue 1.617e+10
-## 15              Cold corpdmgvalue 1.729e+09
-## 16           Drought corpdmgvalue 1.397e+10
-## 17        Dust devil corpdmgvalue 0.000e+00
-## 18        Dust storm corpdmgvalue 3.600e+06
-## 19       Flash flood corpdmgvalue 5.671e+09
-## 20              Hail corpdmgvalue 3.026e+09
-## 21              Heat corpdmgvalue 4.015e+08
-## 22         Hurricane corpdmgvalue 1.728e+10
-## 23         Ligntning corpdmgvalue 1.210e+07
-## 24             Other corpdmgvalue 5.668e+09
-## 25              Rain corpdmgvalue 9.193e+08
-## 26            Sunami corpdmgvalue 2.000e+04
-## 27 Thunderstorm wind corpdmgvalue 1.810e+06
-## 28           Tornado corpdmgvalue 4.150e+08
-## 29              Cold      injures 4.070e+02
+## 13 Thunderstorm wind propdmgvalue 1.040e+07
+## 14           Tornado propdmgvalue 5.700e+10
+## 15              Cold cropdmgvalue 1.729e+09
+## 16           Drought cropdmgvalue 1.397e+10
+## 17        Dust devil cropdmgvalue 0.000e+00
+## 18        Dust storm cropdmgvalue 3.600e+06
+## 19       Flash flood cropdmgvalue 5.671e+09
+## 20              Hail cropdmgvalue 3.026e+09
+## 21              Heat cropdmgvalue 4.015e+08
+## 22         Hurricane cropdmgvalue 1.728e+10
+## 23         Ligntning cropdmgvalue 1.210e+07
+## 24             Other cropdmgvalue 5.668e+09
+## 25              Rain cropdmgvalue 9.193e+08
+## 26            Sunami cropdmgvalue 2.000e+04
+## 27 Thunderstorm wind cropdmgvalue 1.810e+06
+## 28           Tornado cropdmgvalue 4.150e+08
+## 29              Cold      injures 1.025e+03
 ## 30           Drought      injures 1.900e+01
-## 31        Dust devil      injures 2.500e+01
-## 32        Dust storm      injures 6.900e+01
-## 33       Flash flood      injures 6.495e+03
-## 34              Hail      injures 3.040e+02
-## 35              Heat      injures 1.554e+03
-## 36         Hurricane      injures 6.899e+03
-## 37         Ligntning      injures 1.014e+03
-## 38             Other      injures 1.578e+03
-## 39              Rain      injures 4.700e+01
+## 31        Dust devil      injures 4.300e+01
+## 32        Dust storm      injures 4.400e+02
+## 33       Flash flood      injures 6.791e+03
+## 34              Hail      injures 1.361e+03
+## 35              Heat      injures 2.100e+03
+## 36         Hurricane      injures 2.812e+04
+## 37         Ligntning      injures 5.232e+03
+## 38             Other      injures 3.417e+03
+## 39              Rain      injures 3.050e+02
 ## 40            Sunami      injures 1.290e+02
-## 41 Thunderstorm wind      injures 0.000e+00
-## 42           Tornado      injures 1.196e+04
-## 43              Cold    fatalites 2.400e+01
-## 44           Drought    fatalites 4.000e+00
-## 45        Dust devil    fatalites 1.000e+00
-## 46        Dust storm    fatalites 5.000e+00
-## 47       Flash flood    fatalites 2.650e+02
-## 48              Hail    fatalites 2.000e+00
-## 49              Heat    fatalites 2.190e+02
-## 50         Hurricane    fatalites 1.484e+03
-## 51         Ligntning    fatalites 1.730e+02
-## 52             Other    fatalites 2.170e+02
-## 53              Rain    fatalites 1.600e+01
+## 41 Thunderstorm wind      injures 1.260e+02
+## 42           Tornado      injures 9.142e+04
+## 43              Cold    fatalites 1.540e+02
+## 44           Drought    fatalites 6.000e+00
+## 45        Dust devil    fatalites 2.000e+00
+## 46        Dust storm    fatalites 2.200e+01
+## 47       Flash flood    fatalites 4.760e+02
+## 48              Hail    fatalites 1.500e+01
+## 49              Heat    fatalites 9.370e+02
+## 50         Hurricane    fatalites 6.353e+03
+## 51         Ligntning    fatalites 8.170e+02
+## 52             Other    fatalites 5.500e+02
+## 53              Rain    fatalites 1.140e+02
 ## 54            Sunami    fatalites 3.300e+01
-## 55 Thunderstorm wind    fatalites 0.000e+00
-## 56           Tornado    fatalites 1.064e+03
+## 55 Thunderstorm wind    fatalites 2.700e+01
+## 56           Tornado    fatalites 5.639e+03
 ```
 
 
@@ -344,29 +337,16 @@ ggplot(damgeOnHealth, aes(x = reorder(event, value), y = value, fill = factor(da
 ![plot of chunk plot_healthdmg](figure/plot_healthdmg.png) 
 
 
-  Rank  | Event   |  People Headth Harm injuries+fatalites | 
-  ------ | -------- | ------------- |
- 1 |           Tornado     |   97078 | 
- 2 | Thunderstorm wind    |    12608 | 
- 3 |         Heat    |    12400 | 
- 4 |       Flash flood   |     10250 | 
- 5 |      Cold   |     7415 | 
-
+ 
 #### 4.2  The most harmful for economic value 
- Rank| Event   |  People Headth Harm (injuries+fatalites) | 
- - | -------- | ------------- |
- 1 |           Tornado     |   97078 | 
- 2 | Thunderstorm wind    |    12608 | 
- 3 |             Heat    |    12400 | 
- 4 |       Flash flood   |     10250| 
- 5 |      Cold   |     7415| 
+
 
 
 
 
 ```r
 
-damgeOnEconomic <- tidy[grep("corpdmgvalue|propdmgvalue", tidy[, "damagetype"]), 
+damgeOnEconomic <- tidy[grep("cropdmgvalue|propdmgvalue", tidy[, "damagetype"]), 
     ]
 ggplot(damgeOnEconomic, aes(x = reorder(event, value), y = value, fill = factor(damagetype, 
     labels = c("Property", "Crop")))) + geom_bar(stat = "identity") + labs(title = "Top harmful weather event for economic ", 
@@ -378,5 +358,6 @@ ggplot(damgeOnEconomic, aes(x = reorder(event, value), y = value, fill = factor(
 ```
 
 ![plot of chunk plot_ecodmg](figure/plot_ecodmg.png) 
+
 
 
