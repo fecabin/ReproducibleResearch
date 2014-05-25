@@ -1,7 +1,7 @@
 # Analysis on Various Weather Events aganist Population Health and Economic
 
 ## 1- Synopsis
-  - This report presents an analysis about the impacts of wheather events on the population health and economic.We analysis the data published by the National Weather Service Instruction in 2007. We will address the damge on economic  by reporting the economic dmange caculated by property damge and crop damge measuered in US dollars, and address the damage on people health by sum the number of injures and fatalites in the events. 
+This report presents an analysis about the impacts of wheather events on the population health and economic.We analysis the data published by the National Weather Service Instruction in 2007. We will address the damge on economic  by reporting the economic dmange caculated by property damge and crop damge measuered in US dollars, and address the damage on people health by sum the number of injures and fatalites in the events. 
 
 ## 2 - Analysis Question
  1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to popuulation health
@@ -23,7 +23,7 @@ ff <- file.path(getwd(), "repdata-data-StormData.csv.bz2")
 data <- read.csv(ff, stringsAsFactors = FALSE)
 ````
 
-- 2. Variables we keep for analysis
+- 2- Variables we keep for analysis
 
   Variabl Name | Description|
   -------------|-------------|
@@ -50,9 +50,8 @@ names(pData)
    
 #### 3.1.1  Event tpye 
 
-      - Group all events with five main category
       - Create a column as the unified name of that eventype 
-      - The hierachy looks like as follow:
+      - The hierachy looks like as follow: 
         - Convection
           - lightning
           - tornado
@@ -94,25 +93,25 @@ names(pData)
   River flood   |  RIVER FLOOD , URBAN FLOOD | 
   Tropical Storm |TROPICAL STORM,TROPICAL|
   Hurricane   | HURRICANE |
-   Drought   | DROUGHT |
-    Dust storm   | DUST STORM |
-        Dust devil   | DUST DEVIL |
-    RAIN  | rain |
+  Drought   | DROUGHT |
+  Dust storm   | DUST STORM |
+  Dust devil   | DUST DEVIL |
+  Rain  | RAIN |
 
 
 ```` {r unifiednamefun,cache=TRUE,echo = TRUE}
 # Function : Give each eventype an unified event description
 deliverEvtUnifiedName<-function (dd){
   evtMatcher<-data.frame( reg=c("NADO|FUNNEL|WATERSPOUT","THUNDER|STORM|WIND","HAIL"
-                                ,"FROST|FREEZ|BLIZZARD|WINTER|COLD|LOW TEMP|RECORD LOW|SNOW|ICE","HEAT|WARM|RECORD HIGH"
-                                ,"COSTAL STORM","SUNAMI","RIP CURRENT"
-                                ,"FLASH FLOOD|FLD|FLOOD","RIVER FLOOD|URBAN FLOOD","TROPICAL STORM|TROPICAL"," "
-                                ,"DROUGHT","DUST STORM","DUST DEVIL","RAIN","LIGHTNING") )
+                                ,"FROST|FREEZ|BLIZZARD|WINTER|COLD|LOW TEMP|RECORD LOW|SNOW|ICE",
+                                "HEAT|WARM|RECORD HIGH","COSTAL STORM","SUNAMI","RIP CURRENT"
+                                ,"FLASH FLOOD|FLD|FLOOD","RIVER FLOOD|URBAN FLOOD","TROPICAL STORM|TROPICAL"
+                                ,"HURRICANE","DROUGHT","DUST STORM","DUST DEVIL","RAIN","LIGHTNING") )
   
   factorId<-c("Tornado","Thunderstorm wind","Hail"
                         ,"Cold","Heat","Costal Storm","Sunami","Rip current"
                         ,"Flash flood","River flood","Tropical Storm","Hurricane"
-                        ,"Drought","Dust storm","Dust devil","Rain","Ligntning","Other");
+                        ,"Drought","Dust storm","Dust devil","Rain","Ligntning");
  
   for ( i in  1:nrow(evtMatcher)){
     indexFit<-grep(evtMatcher[i,"reg"],toupper(dd[ ,"evtype"]))
@@ -125,7 +124,7 @@ deliverEvtUnifiedName<-function (dd){
 }
 ```
 
-  - Use the function to filter and put value into "event"
+#### Use the function to filter and put value into "event"
 ```` {r eventProcessing,echo = TRUE}
 
 
@@ -142,9 +141,10 @@ table(pData$event)
 ````
 
 
-#### 3.1.2  Create an exact amounts for property and corp damage
-        - Fomula I  : propdmgValue = propdmg       *  propdmgexp
-        - Fomula II : cropdmgValue = cropdmg       *  cropdmgexp  
+### 3.1.2  Create an exact amounts for property and corp damage
+
+  - Fomula I  : propdmgValue = propdmg       *  propdmgexp
+  - Fomula II : cropdmgValue = cropdmg       *  cropdmgexp  
 
         
               propdmgexp   |  unit   
@@ -155,6 +155,8 @@ table(pData$event)
               H            |            100
               NA or BLANK  |              1
 
+#### Function : Caculate the property and crop damg by 'dmg' and 'exp' variable
+  
 ```` {r dmgCaculation ,echo = TRUE} 
 # Function : Caculate each entry the property and crop damge value by 'dmg' and 'exp' variables
 deliverActualDmgValue<-function (dd){
@@ -162,34 +164,58 @@ deliverActualDmgValue<-function (dd){
   multi<-c(1000000000,1000000,1000,100);
 
   for ( i in  1:nrow(unit)){
+    # index that match the unit
     indexCrodFit<-grep(unit[i,"cha"], toupper(dd[ ,"cropdmgexp"]))
+    
     if(length(indexCrodFit)>0){
+      
+      # Caculate the actual value
       dd[indexCrodFit,'cropdmgvalue']<- multi[i] * dd[indexCrodFit ,"cropdmg"]
+      
     }
+    
+    # Same procudure for property damage
     indexProdFit<-grep(unit[i,"cha"],toupper(dd[ ,"propdmgexp"]))
+    
     if(length(indexProdFit)>0){
+      
       dd[indexProdFit,'propdmgvalue']<- multi[i] * dd[indexProdFit ,"propdmg"]
     }
+    
   }
   return(dd)
 }
 
-
+# Default value of the damage equals to variable 'dmg'
 pData$cropdmgvalue<-pData$cropdmg
 pData$propdmgvalue<-pData$propdmg
+
 pData<-deliverActualDmgValue(pData)
+```
+#### Watch the summary of crop damage and property damage
+````{r summary1,echo = TRUE} 
+
 # see the value:
 summary(pData$cropdmgvalue)
 summary(pData$propdmgvalue)
 
+````
 
-# Add a new variable: propdmagevalue + corpdmgvalue
+### Add  new variables: Damge on economic, Damge on population
+
+ - Damge on economic : `ecodmgvalue` = `propdmagevalue` + `corpdmgvalue`
+ - Damge on population health : `pephealthdmg` = `propdmagevalue` + `corpdmgvalue`
+    
+````{r addnewvariable,echo = TRUE} 
 pData$ecodmgvalue<-pData$cropdmgvalue+pData$propdmgvalue
 pData$pephealthdmg<-pData$injures+pData$fatalites
 summary(pData$ecodmgvalue)
 ````
           
-#### 3.2 Data Aggeratiion
+### 3.2 Data Aggeratiion
+
+Caculate the Sum of `propdmgvalue`, `cropdmgvalue`,`injures`,`fatalites` for each `event` 
+
 ```` {r dataAggrate,echo = TRUE} 
 library(reshape2)
 
@@ -199,8 +225,8 @@ colnames(tidy)<-c("event","damagetype","value")
 print(tidy)
 ````
 
-### 4- Results
-#### 4.1  The most harmful for people health
+## 4- Results
+### 4.1  The most harmful weather events for people health
   - Extract rows that contains info about people impact on populaiton health 
 ````{r plot_healthdmg,fig.width=10} 
 library("ggplot2")
@@ -210,16 +236,12 @@ ggplot(damgeOnHealth, aes(x=reorder(event,value) ,y=value,fill=factor(damagetype
 ````
 
  
-#### 4.2  The most harmful for economic value 
+### 4.2  The most harmful weather events for economic value 
 
-
-
-
+ - Extract rows that contains info about people impact on economic 
+ 
 ```` {r plot_ecodmg,fig.width=10} 
-
 damgeOnEconomic<-tidy[ grep('cropdmgvalue|propdmgvalue',tidy[,'damagetype'] ),]
 ggplot(damgeOnEconomic, aes(x=reorder(event,value) ,y=value,
                             fill=factor(damagetype,labels=c("Property","Crop") )))+geom_bar(stat='identity')+labs(title = "Top harmful weather event for economic ", x = "Event", y = "Damage on economic value (US dollors)")+ scale_fill_manual(values=c("#7D5E35", "#407D47"))+ guides(fill = guide_legend(title = "Type of damage"))+xlab("Weather Event")+theme(axis.text = element_text(size=12,colour = "#1F4178"),                                                                                                                                                                                                                                                                                                                                                                                                              axis.title=element_text(size=14,colour = "#3A3E42",face="bold"), title = element_text(size=16,colour = "#282B2E",face="bold")  )+ coord_flip()                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 ````
-
-
