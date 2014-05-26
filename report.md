@@ -1,7 +1,7 @@
 # Analysis on Various Weather Events aganist Population Health and Economy
 
 ## 1- Synopsis
-This report presents an analysis about the impacts of wheather events on the population health and economic. We analysis the data published by the National Weather Service Instruction in 2007. We will address the damge on economic  by reporting the economic dmange caculated by property damge and crop damge measuered in US dollars, and address the damage on people health by sum the number of injures and fatalites in the events. In the end, we illustrate the impact of different types of events on these two aspects with two barchart containing two measurements for each aspect. We found that the tornado is most harmful for population heath, and the flash flood results in greatest loss on economic value.
+This report presents an analysis about the impacts of wheather events on the population health and economic. We analysed the data published by the National Weather Service Instruction in 2007. We will address the damge on economic  by reporting the economic dmange caculated by property damge and crop damge measuered in US dollars, and address the damage on people health by sum the number of injures and fatalites in the events. In the end, we illustrate the impact of different types of events on these two aspects with two barchart containing two measurements for each aspect. We found that the tornado is most harmful for population heath, and the flash flood results in greatest loss on economic value.
 
 ## 2 - Analysis Question
  1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to popuulation health
@@ -358,7 +358,7 @@ print(tidy)
 
 ## 4- Results
 ### 4.1  The most harmful weather events for people health
-  - Extract rows that contains info about people impact on populaiton health 
+  - Extract rows that contains info about people impact on populaiton health
 
 ```r
 library("ggplot2")
@@ -395,4 +395,13 @@ ggplot(damgeOnEconomic, aes(x = reorder(event, value), y = value, fill = factor(
 ```
 
 ![plot of chunk plot_ecodmg](figure/plot_ecodmg.png) 
+
+
+## 5- Conclusion
+  From the results, we can see :
+  - 1. The most harmful weather event for population health is ***tornado*** 
+  - 2. The most harmful weather event for economy is ***flash flood***
+
+
+
 
