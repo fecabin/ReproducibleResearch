@@ -1,4 +1,4 @@
-# Analysis on Various Weather Events aganist Population Health and Economy
+# Analysis on Weather Events aganist Population Health and Economy in US
 
 ## 1- Synopsis
 This report presents an analysis about the impacts of wheather events on the population health and economic. We analysed the data published by the National Weather Service Instruction in 2007. We will address the damge on economic  by reporting the economic dmange caculated by property damge and crop damge measuered in US dollars, and address the damage on people health by sum the number of injures and fatalites in the events. In the end, we illustrate the impact of different types of events on these two aspects with two barchart containing two measurements for each aspect. We found that the tornado is most harmful for population heath, and the flash flood results in greatest loss on economic value.
